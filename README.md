@@ -6,6 +6,10 @@ Given a simulated Nigerian distribution grid dataset, identify which 11 kV feede
 
 My contribution: **backend and detection pipeline**.
 
+
+
+<img width="800" height="450" alt="ezgif-3921fa7e825004ef" src="https://github.com/user-attachments/assets/b728e79c-7853-4539-ae67-b4a67d0f0426" />
+
 ---
 
 ## Table of Contents
