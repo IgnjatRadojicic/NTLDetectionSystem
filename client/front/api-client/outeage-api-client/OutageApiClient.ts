@@ -2,17 +2,47 @@ import { type IOutageApiClient, type OutageInfo, type OutageType } from "./IOuta
 
 export class OutageApiClient implements IOutageApiClient {
   private readonly baseUrl: string;
+  private readonly useStaticData: boolean;
 
   constructor(baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5601") {
     this.baseUrl = baseUrl.replace(/\/$/, "");
+    this.useStaticData = process.env.NEXT_PUBLIC_USE_STATIC_DATA === "true";
   }
 
   async getPastOutages(signal?: AbortSignal): Promise<OutageInfo[]> {
+    if (this.useStaticData) {
+      return this.getOutagesFromStatic("/data/outages-history.json", signal);
+    }
     return this.getOutages(["/history", "/api/outages/history"], signal);
   }
 
   async getCurrentOutages(signal?: AbortSignal): Promise<OutageInfo[]> {
+    if (this.useStaticData) {
+      return this.getOutagesFromStatic("/data/outages-current.json", signal);
+    }
     return this.getOutages(["/current", "/api/outages/current"], signal);
+  }
+
+  private async getOutagesFromStatic(path: string, signal?: AbortSignal): Promise<OutageInfo[]> {
+    const response = await fetch(path, {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      signal,
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      throw new Error(`Static outage data not found at ${path} (${response.status})`);
+    }
+
+    const payload = (await response.json()) as unknown;
+    if (!Array.isArray(payload)) {
+      return [];
+    }
+
+    return payload
+      .map((item) => this.mapOutage(item))
+      .filter((item): item is OutageInfo => item !== null);
   }
 
   private async getOutages(paths: string[], signal?: AbortSignal): Promise<OutageInfo[]> {
