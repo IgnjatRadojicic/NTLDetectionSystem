@@ -2,16 +2,22 @@ import { FeederAnomaly, IAnomalyApiClient } from "./IAnomalyApiClient";
 
 export class AnomalyApiClient implements IAnomalyApiClient {
   private readonly baseUrl: string;
+  private readonly useStaticData: boolean;
 
   constructor(baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "") {
     this.baseUrl = baseUrl;
+    this.useStaticData = process.env.NEXT_PUBLIC_USE_STATIC_DATA === "true";
   }
 
   async getAnomalies(signal?: AbortSignal): Promise<FeederAnomaly[]> {
+    const url = this.useStaticData
+      ? "/data/feeders-anomalies.json"
+      : `${this.baseUrl}/api/feeders/anomalies`;
+
     let response: Response;
 
     try {
-      response = await fetch(`${this.baseUrl}/api/feeders/anomalies`, {
+      response = await fetch(url, {
         method: "GET",
         signal,
         headers: {
@@ -20,7 +26,9 @@ export class AnomalyApiClient implements IAnomalyApiClient {
       });
     } catch (error) {
       throw new Error(
-        "Unable to reach anomalies API. Check if backend is running, CORS is enabled, and https://localhost:7061 certificate is trusted.",
+        this.useStaticData
+          ? "Unable to load static anomaly data."
+          : "Unable to reach anomalies API. Check if backend is running, CORS is enabled, and certificate is trusted.",
         { cause: error }
       );
     }
